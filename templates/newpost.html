@@ -1,14 +1,16 @@
 ﻿{% extends "base.html" %}
 {% block content %}
+            <h2>new post</h2>
+
             <form method="post">
                 <label>
                     <div>Title</div>
                     <input type="text" name="title" value="{{title}}">
                 </label>
+
                 <label>
                     <div>Content</div>
-                    <textarea rows=30 cols=100 name="content">{{content}}
-                    </textarea>
+                    <textarea name="content">{{content}}</textarea>
                 </label>
 
                 <div class="error">{{error}}</div>

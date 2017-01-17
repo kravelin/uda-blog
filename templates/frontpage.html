@@ -1,11 +1,11 @@
 ﻿{% extends "base.html" %}
 {% block content %}
-            {% for post in posts %}
-                {{ post.render() | safe }}
-            <br><br>
-            {% endfor %}
+    {% for p in posts %}
+        {{ p.render() | safe }}
+        <br><br>
+    {% endfor %}
 
-            <div class="right-panel">
-                <a href="newpost.html">Make a new post</a>
-            </div>
+    <div class="right-panel">
+        <a href="/blog/newpost">Make a new post</a>
+    </div>
 {% endblock %}
