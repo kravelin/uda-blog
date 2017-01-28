@@ -16,6 +16,11 @@
     right: 0px;
 }
 
+.login-area {
+    border-bottom: 1em solid black;
+    margin-bottom: 2em;
+}
+
 h2 {
     font-size: 24px;
     font-weight: bold;
@@ -27,8 +32,8 @@ h2 {
 }
 
 label {
-  display: block;
-  font-size: 20px;
+    display: block;
+    font-size: 20px;
 }
 
 label + label {
@@ -43,14 +48,22 @@ input[type=text] {
 }
 
 textarea {
-  width: 500px;
-  height: 400px;
-  font-size: 17px;
-  font-family: monospace;
+    width: 500px;
+    height: 400px;
+    font-size: 17px;
+    font-family: monospace;
 }
 
-input[type=submit] {
-  font-size: 24px;
+.newpost-submit, .login-submit, .editpost-submit, .deletepost-submit, addcomment-submit {
+    font-size: 24px;
+}
+
+.post-edit-submit {
+    font-size: 12px;
+}
+
+.addcomment {
+    font-size: 12px;
 }
 
 .main-title {
@@ -59,7 +72,7 @@ input[type=submit] {
     font-size: 40px;
     font-weight: bold;
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 10px;
     text-decoration: none;
 }
 
@@ -75,6 +88,32 @@ input[type=submit] {
 .post-title {
     font-size: 24px;
     font-weight: bold;
+    width = 100%;
+}
+
+.post-author {
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    color: #999;
+}
+
+.post-summary {
+    display: flex;
+    background-color: #fffdc1;
+    font-size: 16px;
+}
+
+.comment-summary {
+    width: 33%;
+    vertical-align: bottom;
+    font-size: 12px;
+}
+
+.post-edit {
+    width: 33%;
+    text-align: center;
+    color: #999;
 }
 
 .post-date {
@@ -82,10 +121,48 @@ input[type=submit] {
     right: 0px;
     bottom: 0px;
     color: #999;
-
 }
 
 .post-content {
     margin-top: 5px;
+    font-family: monospace;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 12px;
+    background-color: #f9f9f9;
 }
 
+.comments {
+    border-radius: 25px;
+    background-color: #f7ec9b;
+    padding: 10px;
+}
+
+.comment {
+    display: flex;
+    border: 1px solid gray;
+    font-size: 12px;
+}
+
+.comment-left-side {
+    width: 28%;
+}
+
+.comment-right-side {
+    width: 80%;
+}
+
+.comment-author {
+    font-weight: bold;
+}
+
+.comment-date {
+    font-style: italic;
+}
+
+.comment-edits {
+    font-size: 10px;
+}
+.comment-content {
+    font-size: 14px;
+}
