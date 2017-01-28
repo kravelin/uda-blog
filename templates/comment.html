@@ -1,23 +1,17 @@
 <div class="post">
     <div class="post-heading">
-        <div class="post-title">
-            {{ p.title }}
-        </div>
-
-        <br>
-
         <div class="post-author">
-            {{ p.author }}
+            {{ c.author }}
         </div>
 
        <div class="post-date">
-           {{ p.created.strftime("%b %d, %Y") }}
+           {{ c.created.strftime("%b %d, %Y") }}
        </div>
     </div>
 
     <div class="post-content">
         <pre>
-{{ p._render_text | safe }}
+{{ c._render_text | safe }}
         </pre>
     </div>
 </div>

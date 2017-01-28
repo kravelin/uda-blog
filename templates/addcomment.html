@@ -1,0 +1,26 @@
+﻿{% extends "base.html" %}
+{% block content %}
+
+            <div class="login-area">
+                {{author}} (<a class="login-link" href="/logout">logout</a>)
+            </div>
+
+            <h2>Add Comment</h2>
+
+            <form method="post">
+                <label>
+                    <div>Comment</div>
+                    <textarea name="content">{{content}}</textarea>
+                </label>
+
+                <input type="hidden" name="author" value="{{author}}">
+                <input type="hidden" name="post_id" value="{{post_id}}">
+
+                {% if error %}
+                    <div class="error">{{error}}</div>
+                {% endif %}
+
+                <input class="addcomment-submit" type="submit">
+                <input class="addcomment-submit" type="submit" name="Cancel" value="cancel">
+            </form>
+{% endblock %}

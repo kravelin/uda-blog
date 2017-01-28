@@ -1,5 +1,10 @@
 ﻿{% extends "base.html" %}
 {% block content %}
+
+            <div class="login-area">
+                {{username}} (<a class="login-link" href="/logout">logout</a>)
+            </div>
+
             <h2>new post</h2>
 
             <form method="post">
@@ -13,8 +18,11 @@
                     <textarea name="content">{{content}}</textarea>
                 </label>
 
+                <input type="hidden" name="author" value="{{username}}">
+
                 <div class="error">{{error}}</div>
 
-                <input type="submit">
+                <input class="newpost-submit" type="submit">
+                <input class="newpost-submit" type="submit" name="Cancel" value="cancel">
             </form>
 {% endblock %}

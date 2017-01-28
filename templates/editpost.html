@@ -1,0 +1,27 @@
+﻿{% extends "base.html" %}
+{% block content %}
+            <div class="login-area">
+                {{ username }} (<a class="login-link" href="/logout">logout</a>)
+            </div>
+
+            <h2>Edit Post</h2>
+
+            <form method="post">
+                <label>
+                    <div>Title</div>
+                    <input type="text" name="title" value="{{ title }}">
+                </label>
+
+                <label>
+                    <div>Content</div>
+                    <textarea name="content">{{ content }}</textarea>
+                </label>
+
+                <input type="hidden" name="author" value="{{ username }}">
+
+                <div class="error">{{ error }}</div>
+
+                <input class="editpost-submit" type="submit">
+                <input class="editpost-submit" type="submit" name="Cancel" value="cancel">
+            </form>
+{% endblock %}

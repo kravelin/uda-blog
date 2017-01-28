@@ -1,11 +1,24 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% block content %}
+
+    <div class="login-area">
+        {% if username == "" %}
+             <a class="login-link" href="/login">login</a>
+             <a class="login-link" href="/signup">Sign Up</a>
+        {% else %}
+            {{ username }} (<a class="login-link" href="/logout">logout</a>)
+        {% endif %}
+    </div>
+
     {% for p in posts %}
-        {{ p.render() | safe }}
+        {{ p.render(username) | safe }}
+        {{ p.key().id() | summary_details(p.author, username) | safe }}
         <br><br>
     {% endfor %}
 
+    {% if username != "" %}
     <div class="right-panel">
         <a href="/blog/newpost">Make a new post</a>
     </div>
+    {% endif %}
 {% endblock %}

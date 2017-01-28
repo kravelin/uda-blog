@@ -1,5 +1,11 @@
 ﻿{% extends "base.html" %}
 
 {% block content %}
-    {{post.render() | safe}}
+
+    <div class="login-area">
+        {{ username }} (<a class="login-link" href="/logout">logout</a>)
+    </div>
+
+    {{ post.render(username) | safe }}
+    {{ post.key().id() | summary_details(post.author, username) | safe }}
 {% endblock %}
