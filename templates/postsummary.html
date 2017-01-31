@@ -4,7 +4,7 @@
         {% if username != "" %}
             <form method="post">
                 <input type="hidden" name="post_id" value="{{ post_id }}">
-                <input class="addcomment" type="submit" name="Comment" value="Comment">
+                <input class="addcomment" type="submit" name="Comment" value="Add Comment">
             </form>
         {% endif %}
     </div>
@@ -12,11 +12,22 @@
         <div class="post-edit">
             <form method="post">
                 <input type="hidden" name="post_id" value="{{ post_id }}">
-                <input class="post-edit-submit" type="submit" name="Edit" value="edit">
-                <input class="post-edit-submit" type="submit" name="Delete" value="delete">
+                <input class="post-edit-submit" type="submit" name="Edit" value="Edit Post">
+                <input class="post-edit-submit" type="submit" name="Delete" value="Delete Post">
             </form>
         </div>
     {% endif %}
+    <div class="likes-summary">
+        <form method="post">
+            <input type="hidden" name="post_id" value="{{ post_id }}">
+            <input type="hidden" name="username" value="{{ username }}">
+            {% if username == "" %}
+                {{ l_count }} <input class="like-button disabled" type="submit" name="Like" value="&#128402;"> {{ error }}
+            {% else %}
+                {{ l_count }} <input class="like-button" type="submit" name="Like" value="&#128402;"> {{ error }}
+            {% endif %}
+        </form>
+    </div>
 </div>
 <div class="comments">
     {% for comment in comments %}

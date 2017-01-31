@@ -47,12 +47,31 @@ class User(db.Model):
             return u
 
 
+class Likes(db.Model):
+    post_id = db.StringProperty(required = True)
+    username = db.StringProperty(required = True)
+
+
+    @classmethod
+    def by_post(cls, post_id):
+        l = cls.all().filter("post_id =", str(post_id))
+        l_count = cls.all(keys_only=True).filter("post_id", str(post_id)).count(5000)
+        return l, l_count
+
+
+    @classmethod
+    def by_user_and_post(cls, post_id, username):
+        l = cls.all().filter("post_id =", str(post_id)).filter("username =", str(username)).get()
+        return l
+
+
 class Comments(db.Model):
     post_id = db.StringProperty(required = True)
     content = db.TextProperty(required = True)
     author = db.StringProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
+
 
     def render_str(self, template, **params):
         t = jinja_env.get_template(template)

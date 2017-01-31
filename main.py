@@ -25,15 +25,21 @@ def render_str(template, **params):
     return t.render(params)
 
 
-def summary_details(post_id, author, username):
+def summary_details(post_id, author, username, error):
     c, c_count = blogData.Comments.by_post(post_id)
 
     if not c:
         c_count = 0
 
+    l, l_count = blogData.Likes.by_post(post_id)
+
+    if not l:
+        l_count = 0
+
     t = jinja_env.get_template("postsummary.html")
     return t.render(post_id = post_id, c_count = c_count, comments = c,
-                    author = author, username = username)
+                    author = author, username = username, l_count = l_count,
+                    likes = l)
 
 jinja_env.filters["summary_details"] = summary_details
 
@@ -185,10 +191,13 @@ class BlogFrontPage(Handler):
 
     def post(self):
 
+        username = self.request.get("username")
         post_id = self.request.get("post_id")
+
         key = db.Key.from_path("Post", int(post_id),
               parent=blogData.blog_key())
         p = db.get(key)
+        posts = blogData.Post.all().order("-created")
 
         if self.request.get("Edit"):
             return self.redirect("/blog/editpost?post_id=%s" % post_id)
@@ -198,6 +207,24 @@ class BlogFrontPage(Handler):
 
         if self.request.get("Comment"):
             return self.redirect("/blog/addcomment?post_id=%s" % post_id)
+
+        if self.request.get("Like"):
+            l = blogData.Likes.by_user_and_post(post_id, username)
+
+            if not self.user:
+                return self.redirect("/login")
+            if p.author == username:
+                return self.render("frontpage.html", posts = posts,
+                                   username = username)
+            if l:
+                l.delete()
+                return self.render("frontpage.html", posts = posts,
+                                    username = username)
+            else:
+                l = blogData.Likes(post_id = post_id, username = username)
+                l.put()
+                return self.render("frontpage.html", posts = posts,
+                                    username = username)
 
 
 class PostPage(Handler):
