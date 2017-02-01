@@ -12,7 +12,7 @@
 
     {% for p in posts %}
         {{ p.render(username) | safe }}
-        {{ p.key().id() | summary_details(p.author, username, error) | safe }}
+        {{ p.key().id() | summary_details(p.author, username) | safe }}
         <br><br>
     {% endfor %}
 

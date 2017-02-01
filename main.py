@@ -21,11 +21,29 @@ jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
 
 ### blog functions
 def render_str(template, **params):
+    """
+    render_str: render a template
+    Args:
+        self (self pointer): pointer to class object, does not need to be passed in
+        template (str): the template file to be rendered
+        **params (varies): any extra parameteres to be passed to the rendered template
+    Returns:
+        rendered template and the parameters in **params
+    """
     t = jinja_env.get_template(template)
     return t.render(params)
 
 
-def summary_details(post_id, author, username, error):
+def summary_details(post_id, author, username):
+    """
+    summary_details: generates the comments and likes section of a post
+    Args:
+        post_id (int): ID of the post being used
+        author (str): the author of the post
+        username (str): the user viewing the post
+    Returns:
+        rendered template of the post details section
+    """
     c, c_count = blogData.Comments.by_post(post_id)
 
     if not c:
@@ -48,37 +66,98 @@ jinja_env.filters["summary_details"] = summary_details
 class Handler(webapp2.RequestHandler):
 
     def write(self, *a, **kw):
+        """
+        write: wrapper for write functionality
+        """
         self.response.out.write(*a, **kw)
 
 
     def render_str(self, template, **params):
+        """
+        render_str: render a template
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+            template (str): the template file to be rendered
+            **params (varies): any extra parameteres to be passed to the rendered template
+        Returns:
+            rendered template and the parameters in **params
+        """
         t = jinja_env.get_template(template)
         return t.render(params)
 
 
     def render(self, template, **kw):
+        """
+        render: wrapper for rendering a template
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+            username (str): username of person viewing the page
+        Returns:
+            rendered template file passed through render_str
+        """
         self.write(self.render_str(template, **kw))
 
 
     def set_secure_cookie(self, name, val):
+        """
+        set_secure_cookie: sets the cookie header
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+            name (str): name of the cookie_val
+            val (str): value of the cookie
+        Returns:
+            no return value
+        """
         cookie_val = validate.make_secure_val(val)
         self.response.headers.add_header("Set-Cookie", "%s=%s; Path=/" %
                                          (name, cookie_val))
 
     def read_secure_cookie(self, name):
+        """
+        read_secure_cookie: reads a cookie
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+            name (str): name of the cookie to read
+        Returns:
+            True or False if the cookie is valid
+        """
         cookie_val = self.request.cookies.get(name)
         return cookie_val and validate.check_secure_val(cookie_val)
 
 
     def login(self, user):
+        """
+        login: calls cookie creation when user logs in
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+            user (str): user object of person viewing the page
+        Returns:
+            no return value
+        """
         self.set_secure_cookie("user_id", str(user.key().id()))
 
 
     def logout(self):
+        """
+        logout: clears the session cookie when user logs out
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         self.response.headers.add_header("Set-Cookie", "user_id=; Path=/")
 
 
     def initialize(self, *a, **kw):
+        """
+        initialize: initializes the page
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+            *a (varies): arguments to be passed in to webapp2 initialize function
+            **kw (varies): arguments to be passed in to webapp2 initialize function
+        Returns:
+            no return value
+        """
         webapp2.RequestHandler.initialize(self, *a, **kw)
         uid = self.read_secure_cookie("user_id")
         self.user = uid and blogData.User.by_id(int(uid))
@@ -87,10 +166,24 @@ class Handler(webapp2.RequestHandler):
 class Signup(Handler):
 
     def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         self.render("signup.html")
 
 
     def post(self):
+        """
+        post: renders page when post method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         have_error = False
         self.username = self.request.get("username")
         self.password = self.request.get("password")
@@ -121,12 +214,22 @@ class Signup(Handler):
 
 
     def done(self, *a, **kw):
+        """
+        done: unimplemented stub function
+        """
         raise NotImplementedError
 
 
 class SignUpPage(Signup):
 
     def done(self):
+        """
+        done: checks user to make sure not duplicate, and if passes sends to welcome page
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         # make sure the user doesn't already exist
         u = blogData.User.by_name(self.username)
         if u:
@@ -145,6 +248,13 @@ class SignUpPage(Signup):
 class WelcomePage(Handler):
 
     def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         if self.user:
             self.render("welcome.html",username=self.user.name)
         else:
@@ -154,10 +264,24 @@ class WelcomePage(Handler):
 class LoginPage(Handler):
 
     def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         self.render("login.html")
 
 
     def post(self):
+        """
+        post: renders page when post method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         username = self.request.get("username")
         password = self.request.get("password")
 
@@ -173,12 +297,26 @@ class LoginPage(Handler):
 class LogoutPage(Handler):
 
     def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         self.logout()
         self.redirect("/login")
 
 
 class BlogFrontPage(Handler):
     def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
 
         if not self.user:
             username = ""
@@ -190,6 +328,13 @@ class BlogFrontPage(Handler):
 
 
     def post(self):
+        """
+        post: renders page when post method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
 
         username = self.request.get("username")
         post_id = self.request.get("post_id")
@@ -214,22 +359,27 @@ class BlogFrontPage(Handler):
             if not self.user:
                 return self.redirect("/login")
             if p.author == username:
-                return self.render("frontpage.html", posts = posts,
-                                   username = username)
-            if l:
+                self.redirect("/blog")
+            elif l:
                 l.delete()
-                return self.render("frontpage.html", posts = posts,
-                                    username = username)
+                self.redirect("/blog")
             else:
                 l = blogData.Likes(post_id = post_id, username = username)
                 l.put()
-                return self.render("frontpage.html", posts = posts,
-                                    username = username)
+                self.redirect("/blog")
 
 
 class PostPage(Handler):
 
     def get(self, post_id):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+            post_id (int): ID of the post to be displayed
+        Returns:
+            no return value
+        """
         if not self.user:
             return self.redirect("/login")
 
@@ -248,14 +398,28 @@ class PostPage(Handler):
 class NewPostPage(Handler):
 
     def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         if self.user:
             username = self.user.name
-            return self.render("newpost.html", username=username)
+            self.render("newpost.html", username=username)
         else:
             self.redirect("/login")
 
 
     def post(self):
+        """
+        post: renders page when post method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         if not self.user:
             return self.redirect("/login")
 
@@ -281,6 +445,13 @@ class NewPostPage(Handler):
 class EditPostPage(Handler):
 
     def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
 
         if not self.user:
             return self.redirect("/login")
@@ -292,29 +463,44 @@ class EditPostPage(Handler):
 
         if not post:
             self.error(404)
-            return
+            return self.redirect("/404")
+
+        if self.user.name != post.author:
+            return self.redirect("/blog")
+
 
         self.render("editpost.html", title = post.title, content = post.content,
                     post_id = post_id)
 
 
     def post(self):
+        """
+        post: renders page when post method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         if not self.user:
             return self.redirect("/login")
 
         if self.request.get("Cancel"):
             return self.redirect("/blog")
 
-        author = self.user.name
+        username = self.user.name
 
         title = self.request.get("title")
         content = self.request.get("content")
         post_id = self.request.get("post_id")
+        key = db.Key.from_path("Post", int(post_id),
+                               parent=blogData.blog_key())
+        p = db.get(key)
+
+        author = p.author
+        if username != author:
+            return self.redirect("/blog")
 
         if title and content:
-            key = db.Key.from_path("Post", int(post_id),
-                                   parent=blogData.blog_key())
-            p = db.get(key)
             p.title = title
             p.content = content
             p.put()
@@ -322,12 +508,19 @@ class EditPostPage(Handler):
         else:
             error = "title and content, please!"
             self.render("editpost.html", title = title, content = content,
-                        error = error, username = author, post_id = post_id)
+                        error = error, username = username, post_id = post_id)
 
 
 class DeletePostPage(Handler):
 
     def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
 
         if not self.user:
             return self.redirect("/login")
@@ -339,7 +532,7 @@ class DeletePostPage(Handler):
 
         if not p:
             self.error(404)
-            return
+            return self.redirect("/404")
 
         if p.author != self.user.name:
             return self.redirect("/blog")
@@ -348,6 +541,13 @@ class DeletePostPage(Handler):
 
 
     def post(self):
+        """
+        post: renders page when post method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         if not self.user:
             return self.redirect("/login")
 
@@ -361,7 +561,7 @@ class DeletePostPage(Handler):
 
         if not p:
             self.error(404)
-            return
+            return self.redirect("/404")
 
         if p.author != self.user.name:
             return self.redirect("/blog")
@@ -373,6 +573,13 @@ class DeletePostPage(Handler):
 class AddCommentPage(Handler):
 
     def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         if self.user:
             post_id = self.request.get("post_id")
             author = self.user.name
@@ -383,6 +590,13 @@ class AddCommentPage(Handler):
 
 
     def post(self):
+        """
+        post: renders page when post method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         if not self.user:
             return self.redirect("/login")
 
@@ -407,6 +621,13 @@ class AddCommentPage(Handler):
 class EditCommentPage(Handler):
 
     def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
 
         if not self.user:
             return self.redirect("/login")
@@ -416,30 +637,45 @@ class EditCommentPage(Handler):
               parent=blogData.blog_key())
         comment = db.get(key)
 
+        author = c.author
+        if self.user.neme != author:
+            return self.redirect("/blog")
+
         if not comment:
             self.error(404)
-            return
+            return self.redirect("/404")
 
         self.render("editcomment.html", content = comment.content,
                     c_id = c_id)
 
 
     def post(self):
+        """
+        post: renders page when post method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         if not self.user:
             return self.redirect("/login")
 
         if self.request.get("Cancel"):
             return self.redirect("/blog")
 
-        author = self.user.name
+        username = self.user.name
 
         content = self.request.get("content")
         c_id = self.request.get("c_id")
+        key = db.Key.from_path("Comments", int(c_id),
+                               parent=blogData.blog_key())
+        c = db.get(key)
+
+        author = c.author
+        if username != author:
+            return self.redirect("/blog")
 
         if content:
-            key = db.Key.from_path("Comments", int(c_id),
-                                   parent=blogData.blog_key())
-            c = db.get(key)
             c.content = content
             c.put()
             post_id = c.post_id
@@ -453,6 +689,13 @@ class EditCommentPage(Handler):
 class DeleteCommentPage(Handler):
 
     def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
 
         if not self.user:
             return self.redirect("/login")
@@ -473,6 +716,13 @@ class DeleteCommentPage(Handler):
 
 
     def post(self):
+        """
+        post: renders page when post method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         if not self.user:
             return self.redirect("/login")
 
@@ -495,9 +745,29 @@ class DeleteCommentPage(Handler):
         self.redirect("/blog")
 
 
+class NotFoundErrorPage(Handler):
+
+    def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
+        self.render("404.html")
+
+
 class MainPage(Handler):
 
     def get(self):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            no return value
+        """
         self.write("Hello, Udacity!")
 
 
@@ -513,5 +783,6 @@ app = webapp2.WSGIApplication([("/",MainPage),
                                ("/blog/deletepost",DeletePostPage),
                                ("/blog/addcomment",AddCommentPage),
                                ("/blog/editcomment",EditCommentPage),
-                               ("/blog/deletecomment",DeleteCommentPage)
+                               ("/blog/deletecomment",DeleteCommentPage),
+                               ("/404",NotFoundErrorPage)
                                ], debug=True)
