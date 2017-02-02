@@ -12,11 +12,55 @@ import blogData
 import validate
 
 from string import letters
+from functools import wraps
 from google.appengine.ext import db
 
 template_dir = os.path.join(os.path.dirname(__file__), "templates")
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
                                autoescape = True, trim_blocks = True)
+
+
+### Decorators
+def post_exists(function):
+    """
+    post_exists: decorator to check if a post ID is valid
+    Args:
+        function (function): the wrapped function
+    Returns:
+        either the function with post id and post object, or redirects to 404 page
+    """
+    @wraps(function)
+    def wrapper(self, post_id):
+        key = db.Key.from_path("Post", int(post_id),
+                               parent = blogData.blog_key())
+        post = db.get(key)
+        if post:
+            return function(self, post_id, post)
+        else:
+            self.error(404)
+            return self.redirect("/404/%s" % post_id)
+    return wrapper
+
+
+def comment_exists(function):
+    """
+    comment_exists: decorator to check if a comment ID is valid
+    Args:
+        function (function): the wrapped function
+    Returns:
+        either the function with comment id and comment object, or redirects to 404 page
+    """
+    @wraps(function)
+    def wrapper(self, c_id):
+        key = db.Key.from_path("Comments", int(c_id),
+                                parent = blogData.blog_key())
+        comment = db.get(key)
+        if comment:
+            return function(self, c_id, comment)
+        else:
+            self.error(404)
+            return self.redirect("/404/%s" % c_id)
+    return wrapper
 
 
 ### blog functions
@@ -44,20 +88,20 @@ def summary_details(post_id, author, username):
     Returns:
         rendered template of the post details section
     """
-    c, c_count = blogData.Comments.by_post(post_id)
+    comment, c_count = blogData.Comments.by_post(post_id)
 
-    if not c:
+    if not comment:
         c_count = 0
 
-    l, l_count = blogData.Likes.by_post(post_id)
+    like, l_count = blogData.Likes.by_post(post_id)
 
-    if not l:
+    if not like:
         l_count = 0
 
     t = jinja_env.get_template("postsummary.html")
-    return t.render(post_id = post_id, c_count = c_count, comments = c,
+    return t.render(post_id = post_id, c_count = c_count, comments = comment,
                     author = author, username = username, l_count = l_count,
-                    likes = l)
+                    likes = like)
 
 jinja_env.filters["summary_details"] = summary_details
 
@@ -146,6 +190,49 @@ class Handler(webapp2.RequestHandler):
             no return value
         """
         self.response.headers.add_header("Set-Cookie", "user_id=; Path=/")
+
+
+    def user_logged_in(self):
+        """
+        user_logged_in: check if a user is logged in
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+        Returns:
+            either the username of logged in user, or redirects to login page
+        """
+        if self.user:
+            username = self.user.name
+            return username
+        else:
+            return self.redirect("/login")
+
+
+    def user_owns_post(self, post):
+        """
+        user_owns_post: check if a logged in user owns the post
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+            post (object): post object for the post being checked
+        Returns:
+            True if the user and post authoer match
+        """
+        author = post.author
+        username = self.user.name
+        return author == username
+
+
+    def user_owns_comment(self, comment):
+        """
+        user_owns_comment: check if a logged in user owns the comment
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+            comment (object): comment object for the comment being checked
+        Returns:
+            True if the user and comment author match
+        """
+        author = comment.author
+        username = self.user.name
+        return author == username
 
 
     def initialize(self, *a, **kw):
@@ -247,6 +334,7 @@ class SignUpPage(Signup):
 
 class WelcomePage(Handler):
 
+
     def get(self):
         """
         get: renders page when get method used
@@ -255,10 +343,8 @@ class WelcomePage(Handler):
         Returns:
             no return value
         """
-        if self.user:
-            self.render("welcome.html",username=self.user.name)
-        else:
-            self.redirect("/login")
+        username = self.user_logged_in()
+        self.render("welcome.html", username = username)
 
 
 class LoginPage(Handler):
@@ -336,62 +422,52 @@ class BlogFrontPage(Handler):
             no return value
         """
 
-        username = self.request.get("username")
-        post_id = self.request.get("post_id")
-
-        key = db.Key.from_path("Post", int(post_id),
-              parent=blogData.blog_key())
-        p = db.get(key)
         posts = blogData.Post.all().order("-created")
 
-        if self.request.get("Edit"):
-            return self.redirect("/blog/editpost?post_id=%s" % post_id)
-
-        if self.request.get("Delete"):
-            return self.redirect("/blog/deletepost?post_id=%s" % post_id)
-
-        if self.request.get("Comment"):
-            return self.redirect("/blog/addcomment?post_id=%s" % post_id)
-
-        if self.request.get("Like"):
-            l = blogData.Likes.by_user_and_post(post_id, username)
-
-            if not self.user:
-                return self.redirect("/login")
-            if p.author == username:
-                self.redirect("/blog")
-            elif l:
-                l.delete()
-                self.redirect("/blog")
-            else:
-                l = blogData.Likes(post_id = post_id, username = username)
-                l.put()
-                self.redirect("/blog")
-
-
-class PostPage(Handler):
-
-    def get(self, post_id):
-        """
-        get: renders page when get method used
-        Args:
-            self (self pointer): pointer to class object, does not need to be passed in
-            post_id (int): ID of the post to be displayed
-        Returns:
-            no return value
-        """
         if not self.user:
-            return self.redirect("/login")
+            usernmae = ""
+        else:
+            username = self.request.get("username")
+
+        post_id = self.request.get("post_id")
 
         key = db.Key.from_path("Post", int(post_id),
               parent=blogData.blog_key())
         post = db.get(key)
 
-        if not post:
-            self.error(404)
-            return
+        if post:
+            if self.request.get("Like"):
+                like = blogData.Likes.by_user_and_post(post_id, username)
 
-        username = self.user.name
+            if user_owns_post(post):
+                self.redirect("/blog")
+            elif like:
+                like.delete()
+                self.redirect("/blog")
+            else:
+                like = blogData.Likes(post_id = post_id, username = username)
+                like.put()
+                self.redirect("/blog")
+
+
+class PostPage(Handler):
+
+    @post_exists
+    def get(self, post_id, post):
+        """
+        get: renders page when get method used
+        Args:
+            self (self pointer): pointer to class object, does not need to be passed in
+            post_id (int): ID of the post to be displayed
+            post (object): post object of post to be displayed
+        Returns:
+            no return value
+        """
+        if not self.user:
+            username = ""
+        else:
+            username = self.user.name
+
         self.render("permalink.html", post = post, username = username)
 
 
@@ -405,11 +481,8 @@ class NewPostPage(Handler):
         Returns:
             no return value
         """
-        if self.user:
-            username = self.user.name
-            self.render("newpost.html", username=username)
-        else:
-            self.redirect("/login")
+        username = self.user_logged_in()
+        self.render("newpost.html", username = username)
 
 
     def post(self):
@@ -420,22 +493,16 @@ class NewPostPage(Handler):
         Returns:
             no return value
         """
-        if not self.user:
-            return self.redirect("/login")
-
-        if self.request.get("Cancel"):
-            return self.redirect("/blog")
-
-        author = self.user.name
+        author = self.user_logged_in()
 
         title = self.request.get("title")
         content = self.request.get("content")
 
         if title and content:
-            p = blogData.Post(parent = blogData.blog_key(), title = title,
+            post = blogData.Post(parent = blogData.blog_key(), title = title,
                      content = content, author = author)
-            p.put()
-            self.redirect("/blog/%s" % str(p.key().id()))
+            post.put()
+            self.redirect("/blog/%s" % str(post.key().id()))
         else:
             error = "title and content, please!"
             self.render("newpost.html", title=title, content=content,
@@ -444,67 +511,52 @@ class NewPostPage(Handler):
 
 class EditPostPage(Handler):
 
-    def get(self):
+    @post_exists
+    def get(self, post_id, post):
         """
         get: renders page when get method used
         Args:
             self (self pointer): pointer to class object, does not need to be passed in
+            post_id (int): ID of the post to be edited
+            post (object): post object of the post to be edited
         Returns:
             no return value
         """
 
-        if not self.user:
-            return self.redirect("/login")
+        username = self.user_logged_in()
 
-        post_id = self.request.get("post_id")
-        key = db.Key.from_path("Post", int(post_id),
-              parent=blogData.blog_key())
-        post = db.get(key)
-
-        if not post:
-            self.error(404)
-            return self.redirect("/404")
-
-        if self.user.name != post.author:
+        if not self.user_owns_post(post):
             return self.redirect("/blog")
-
 
         self.render("editpost.html", title = post.title, content = post.content,
                     post_id = post_id)
 
 
-    def post(self):
+    @post_exists
+    def post(self, post_id, post):
         """
         post: renders page when post method used
         Args:
             self (self pointer): pointer to class object, does not need to be passed in
+            post_id (int): ID of the post to edit
+            post (object): post object of the post to be edited
         Returns:
             no return value
         """
-        if not self.user:
-            return self.redirect("/login")
 
-        if self.request.get("Cancel"):
-            return self.redirect("/blog")
-
-        username = self.user.name
+        username = self.user_logged_in()
 
         title = self.request.get("title")
         content = self.request.get("content")
-        post_id = self.request.get("post_id")
-        key = db.Key.from_path("Post", int(post_id),
-                               parent=blogData.blog_key())
-        p = db.get(key)
 
-        author = p.author
-        if username != author:
+        if not self.user_owns_post(post):
             return self.redirect("/blog")
 
         if title and content:
-            p.title = title
-            p.content = content
-            p.put()
-            self.redirect("/blog/%s" % str(p.key().id()))
+            post.title = title
+            post.content = content
+            post.put()
+            self.redirect("/blog/%s" % str(post.key().id()))
         else:
             error = "title and content, please!"
             self.render("editpost.html", title = title, content = content,
@@ -513,104 +565,97 @@ class EditPostPage(Handler):
 
 class DeletePostPage(Handler):
 
-    def get(self):
+    @post_exists
+    def get(self, post_id, post):
         """
         get: renders page when get method used
         Args:
             self (self pointer): pointer to class object, does not need to be passed in
+            post_id (int): ID of post to delete
         Returns:
             no return value
         """
 
-        if not self.user:
-            return self.redirect("/login")
+        username = self.user_logged_in()
 
-        post_id = self.request.get("post_id")
-        key = db.Key.from_path("Post", int(post_id),
-              parent=blogData.blog_key())
-        p = db.get(key)
-
-        if not p:
-            self.error(404)
-            return self.redirect("/404")
-
-        if p.author != self.user.name:
+        if not self.user_owns_post(post):
             return self.redirect("/blog")
 
-        self.render("deletepost.html", p = p, post_id = post_id, username=self.user.name)
+        self.render("deletepost.html", post = post, username = username,
+                    post_id = post_id)
 
 
-    def post(self):
+    @post_exists
+    def post(self, post_id, post):
         """
         post: renders page when post method used
         Args:
             self (self pointer): pointer to class object, does not need to be passed in
+            post_id (int): ID of the post to delete
+            post (object): post object of the post to be deleted
         Returns:
             no return value
         """
-        if not self.user:
-            return self.redirect("/login")
 
-        if self.request.get("Cancel"):
+        username = self.user_logged_in()
+
+        if not self.user_owns_post(post):
             return self.redirect("/blog")
 
-        post_id = self.request.get("post_id")
-        key = db.Key.from_path("Post", int(post_id),
-              parent=blogData.blog_key())
-        p = db.get(key)
+        post.delete()
 
-        if not p:
-            self.error(404)
-            return self.redirect("/404")
+        comments, c_count = blogData.Comments.by_post(post_id)
 
-        if p.author != self.user.name:
-            return self.redirect("/blog")
+        if comments:
+            for comment in comments:
+                comment.delete()
 
-        p.delete()
+        likes, l_count = blogData.Likes.by_post(post_id)
+
+        if likes:
+            for like in likes:
+                like.delete()
+
         self.redirect("/blog")
 
 
 class AddCommentPage(Handler):
 
-    def get(self):
+    @post_exists
+    def get(self, post_id, post):
         """
         get: renders page when get method used
         Args:
             self (self pointer): pointer to class object, does not need to be passed in
+            post_id (int): ID of post the comment is for
+            post (object): post object of the post being commented on
         Returns:
             no return value
         """
-        if self.user:
-            post_id = self.request.get("post_id")
-            author = self.user.name
-            return self.render("addcomment.html", post_id = post_id,
-                                author = author)
-        else:
-            self.redirect("/login")
+
+        author = self.user_logged_in()
+        self.render("addcomment.html", post_id = post_id, author = author)
 
 
-    def post(self):
+    @post_exists
+    def post(self, post_id, post):
         """
         post: renders page when post method used
         Args:
             self (self pointer): pointer to class object, does not need to be passed in
+            post_id (int): ID of the post the comment is for
+            post (object): post object of the post being commented on
         Returns:
             no return value
         """
-        if not self.user:
-            return self.redirect("/login")
 
-        if self.request.get("Cancel"):
-            return self.redirect("/blog")
-
-        author = self.user.name
+        author = self.user_logged_in()
         content = self.request.get("content")
-        post_id = self.request.get("post_id")
 
         if content:
-            c = blogData.Comments(parent = blogData.blog_key(), post_id = post_id,
+            comment = blogData.Comments(parent = blogData.blog_key(), post_id = post_id,
                      content = content, author = author)
-            c.put()
+            comment.put()
             self.redirect("/blog/%s" % str(post_id))
         else:
             error = "comment cannot be blank!"
@@ -620,142 +665,113 @@ class AddCommentPage(Handler):
 
 class EditCommentPage(Handler):
 
-    def get(self):
+    @comment_exists
+    def get(self, c_id, comment):
         """
         get: renders page when get method used
         Args:
             self (self pointer): pointer to class object, does not need to be passed in
+            c_id (int): ID of the comment to be edited
+            comment (object): comment object of the comment to be edited
         Returns:
             no return value
         """
 
-        if not self.user:
-            return self.redirect("/login")
+        username = self.user_logged_in()
 
-        c_id = self.request.get("c_id")
-        key = db.Key.from_path("Comments", int(c_id),
-              parent=blogData.blog_key())
-        comment = db.get(key)
-
-        author = c.author
-        if self.user.neme != author:
+        if not self.user_owns_comment(comment):
             return self.redirect("/blog")
-
-        if not comment:
-            self.error(404)
-            return self.redirect("/404")
 
         self.render("editcomment.html", content = comment.content,
                     c_id = c_id)
 
 
-    def post(self):
+    @comment_exists
+    def post(self, c_id, comment):
         """
         post: renders page when post method used
         Args:
             self (self pointer): pointer to class object, does not need to be passed in
+            c_id (int): ID of the comment to be edited
+            comment (object): comment object of the comment to be edited
         Returns:
             no return value
         """
-        if not self.user:
-            return self.redirect("/login")
 
-        if self.request.get("Cancel"):
-            return self.redirect("/blog")
-
-        username = self.user.name
+        username = self.user_logged_in()
 
         content = self.request.get("content")
-        c_id = self.request.get("c_id")
-        key = db.Key.from_path("Comments", int(c_id),
-                               parent=blogData.blog_key())
-        c = db.get(key)
 
-        author = c.author
-        if username != author:
+        if not self.user_owns_comment(comment):
             return self.redirect("/blog")
 
         if content:
-            c.content = content
-            c.put()
-            post_id = c.post_id
+            comment.content = content
+            comment.put()
+            post_id = comment.post_id
             self.redirect("/blog/%s" % str(post_id))
         else:
             error = "comment cannot be blank!"
             self.render("editcomment.html", content = content,
-                        error = error, username = author, c_id = c_id)
+                        error = error, username = username, c_id = c_id)
 
 
 class DeleteCommentPage(Handler):
 
-    def get(self):
+    @comment_exists
+    def get(self, c_id, comment):
         """
         get: renders page when get method used
         Args:
             self (self pointer): pointer to class object, does not need to be passed in
+            c_id (int): ID of the comment to be deleted
+            comment (object): comment object of the comment to be deleted
         Returns:
             no return value
         """
 
-        if not self.user:
-            return self.redirect("/login")
+        username = self.user_logged_in()
 
-        c_id = self.request.get("c_id")
-        key = db.Key.from_path("Comments", int(c_id),
-              parent=blogData.blog_key())
-        c = db.get(key)
-
-        if not c:
-            self.error(404)
-            return
-
-        if c.author != self.user.name:
+        if not self.user_owns_comment(comment):
             return self.redirect("/blog")
 
-        self.render("deletecomment.html", c = c, c_id = c_id, username=self.user.name)
+        self.render("deletecomment.html", comment = comment, c_id = c_id,
+                    username = username)
 
 
-    def post(self):
+    @comment_exists
+    def post(self, c_id, comment):
         """
         post: renders page when post method used
         Args:
             self (self pointer): pointer to class object, does not need to be passed in
+            c_id (int): ID of the comment to be deleted
+            comment (object): comment object of the comment to be deleted
         Returns:
             no return value
         """
-        if not self.user:
-            return self.redirect("/login")
 
-        if self.request.get("Cancel"):
+        username = self.user_logged_in()
+
+        if not self.user_owns_comment(comment):
             return self.redirect("/blog")
 
-        c_id = self.request.get("c_id")
-        key = db.Key.from_path("Comments", int(c_id),
-              parent=blogData.blog_key())
-        c = db.get(key)
-
-        if not c:
-            self.error(404)
-            return
-
-        if c.author != self.user.name:
-            return self.redirect("/blog")
-
-        c.delete()
+        comment.delete()
         self.redirect("/blog")
 
 
 class NotFoundErrorPage(Handler):
 
-    def get(self):
+    def get(self, error_id):
         """
         get: renders page when get method used
         Args:
             self (self pointer): pointer to class object, does not need to be passed in
+            error_id (int): the ID of the post or comment not found
         Returns:
             no return value
         """
-        self.render("404.html")
+        self.render("404.html", error_id = error_id)
 
 
 class MainPage(Handler):
@@ -779,10 +795,10 @@ app = webapp2.WSGIApplication([("/",MainPage),
                                ("/blog",BlogFrontPage),
                                ("/blog/([0-9]+)",PostPage),
                                ("/blog/newpost",NewPostPage),
-                               ("/blog/editpost",EditPostPage),
-                               ("/blog/deletepost",DeletePostPage),
-                               ("/blog/addcomment",AddCommentPage),
-                               ("/blog/editcomment",EditCommentPage),
-                               ("/blog/deletecomment",DeleteCommentPage),
-                               ("/404",NotFoundErrorPage)
+                               ("/blog/editpost/([0-9]+)",EditPostPage),
+                               ("/blog/deletepost/([0-9]+)",DeletePostPage),
+                               ("/blog/addcomment/([0-9]+)",AddCommentPage),
+                               ("/blog/editcomment/([0-9]+)",EditCommentPage),
+                               ("/blog/deletecomment/([0-9]+)",DeleteCommentPage),
+                               ("/404/([0-9]+)",NotFoundErrorPage)
                                ], debug=True)

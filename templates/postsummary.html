@@ -1,20 +1,15 @@
 <div class="post-summary">
     <div class="comment-summary">
         Comments: {{ c_count }}
+        <br>
         {% if username != "" %}
-            <form method="post">
-                <input type="hidden" name="post_id" value="{{ post_id }}">
-                <input class="addcomment" type="submit" name="Comment" value="Add Comment">
-            </form>
+            <a class="addcomment" href="/blog/addcomment/{{ post_id }}">Add Comment</a>
         {% endif %}
     </div>
     {% if author == username %}
         <div class="post-edit">
-            <form method="post">
-                <input type="hidden" name="post_id" value="{{ post_id }}">
-                <input class="post-edit-submit" type="submit" name="Edit" value="Edit Post">
-                <input class="post-edit-submit" type="submit" name="Delete" value="Delete Post">
-            </form>
+            <a class="post-edit-submit" href="/blog/editpost/{{ post_id }}">Edit Post</a>
+            <a class="post-edit-submit" href="/blog/deletepost/{{ post_id }}">Delete Post</a>
         </div>
     {% endif %}
     <div class="likes-summary">
@@ -31,14 +26,13 @@
 </div>
 <div class="comments">
     {% for comment in comments %}
-        <br>
         <div class="comment">
             <div class="comment-left-side">
                 <div class="comment-author">{{ comment.author }}</div>
                 <div class="comment-date">{{ comment.created.strftime("%b %d, %Y") }}</div>
                 {% if comment.author == username %}
                     <div class="comment-edits">
-                        <a href="/blog/editcomment?c_id={{comment.key().id()}}">Edit</a> <a href="/blog/deletecomment?c_id={{comment.key().id()}}">Delete</a>
+                        <a href="/blog/editcomment/{{ comment.key().id() }}">Edit</a> <a href="/blog/deletecomment/{{ comment.key().id() }}">Delete</a>
                     </div>
                 {% endif %}
             </div>

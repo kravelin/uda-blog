@@ -9,11 +9,11 @@
 
     <h3>Are you sure you wish to delete this comment?</h3>
     <br>
-    {{ c.render(username) | safe }}
+    {{ comment.render(username) | safe }}
     <br><br>
 
     <form method="post">
         <input class="deletepost-submit" type="submit" name="Delete Post">
-        <input class="deletepost-submit" type="submit" name="Cancel" value="Cancel">
+        <a class="cancel-button" href="/blog">Cancel</a>
     </form>
 {% endblock %}

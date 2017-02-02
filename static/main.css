@@ -34,6 +34,7 @@ h2 {
 label {
     display: block;
     font-size: 20px;
+    margin: 10px 0px;
 }
 
 label + label {
@@ -54,30 +55,41 @@ textarea {
     font-family: monospace;
 }
 
+.login-form {
+    margin: 10px;
+}
+
 .newpost-submit, .login-submit, .editpost-submit, .deletepost-submit, .addcomment-submit {
     font-size: 24px;
 }
 
+.login-submit {
+    margin-top: 10px;
+}
+
+.cancel-button {
+    background-color: buttonface;
+    border-width: 2px;
+    border-style: outset;
+    border-color: buttonface;
+    border-image: initial;
+    color: buttontext;
+    box-sizing: border-box;
+    padding 1px 6px;
+    display: inline-block;
+    text-decoration: none;
+    margin: 0em;
+    font: 24px Arial;
+    -webkit-writing-mode: horizontal-tb;
+   -webkit-appearance: button;
+}
+
 .post-edit-submit {
     font-size: 16px;
-    border: none;
-    background-color: #fffdc1;
-    padding: 0px;
-    display: inline-block;
-    text-align: center;
-    text-decoration: underline;
-    cursor: pointer;
 }
 
 .addcomment {
     font-size: 12px;
-    border: none;
-    background-color: #fffdc1;
-    padding: 0px;
-    display: inline-block;
-    text-align: center;
-    text-decoration: underline;
-    cursor: pointer;
 }
 
 .main-title {
@@ -183,6 +195,10 @@ input.disabled {
     display: flex;
     border: 1px solid gray;
     font-size: 12px;
+}
+
+.comment + .comment {
+    margin-top: 10px;
 }
 
 .comment-left-side {

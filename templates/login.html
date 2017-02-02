@@ -6,26 +6,15 @@
     <a class="login-link" href="/signup">Sign Up</a>
 </div>
 
-<form method="post">
-    <table>
-        <tr>
-            <td class="label">
-                Username
-            </td>
-            <td>
-                <input type="text" name="username" value="{{username}}">
-            </td>
-        </tr>
-
-        <tr>
-            <td class="label">
-                Password
-            </td>
-            <td>
-                <input type="password" name="password" value="">
-            </td>
-        </tr>
-    </table>
+<form class="login-form" method="post">
+    <label>
+        Username
+    </label>
+    <input type="text" name="username" value="{{username}}">
+    <label>
+        Password
+    </label>
+    <input type="password" name="password" value="">
 
     <div class="error">
         {{error}}
